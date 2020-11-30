@@ -1,100 +1,82 @@
-package com.example.takemidicine_addneworder;
+package com.example.myapplication;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
-import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.location.Address;
-import android.location.Geocoder;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
-import android.service.autofill.TextValueSanitizer;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
+import android.widget.EditText;
 import android.widget.Toast;
 
-import java.util.List;
-import java.util.Locale;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
 
-public class MainActivity extends AppCompatActivity implements LocationListener {
-    Button button_location;
-    TextView textView_location;
-    LocationManager locationManager;
+public class MainActivity extends AppCompatActivity {
+    private Button log;
+    private Button sign;
+    private EditText email ;
+    private EditText pass ;
+    private FirebaseAuth mAuth;
 
-
-   Button imageView4;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        getSupportActionBar().hide(); //<< this
+        mAuth = FirebaseAuth.getInstance();
 
-        textView_location = findViewById(R.id.textView_locaion);
-        button_location=findViewById(R.id.button_location);
+        email = (EditText) findViewById(R.id.email);
+        pass = (EditText) findViewById(R.id.pass);
 
-        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(MainActivity.this,new String[]{
-                    Manifest.permission.ACCESS_FINE_LOCATION
-            },100);
-        }
-
-        button_location.setOnClickListener(new View.OnClickListener() {
+        sign = (Button) findViewById(R.id.sign);
+        sign.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                getLocation();
+            public void onClick(View view) {
+                Intent i = new Intent(MainActivity.this, Uploading.class);
+                startActivity(i);
             }
-
         });
 
+        log = (Button) findViewById(R.id.log);
+        log.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                final Intent l = new Intent(MainActivity.this, Uploading.class);
+
+                if (ValidDetails(email.getText().length(),pass.getText().length())==true ) {
+                    logInFunction(email.getText().toString() , pass.getText().toString());
+                }
+                else
+                    Toast.makeText(MainActivity.this , "תכניס הפרטיים", Toast.LENGTH_LONG).show();
+            }
+        });
     }
-
-    @SuppressLint("MissingPermission")
-    private void getLocation() {
-        try {
-            locationManager = (LocationManager) getApplicationContext().getSystemService(LOCATION_SERVICE);
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,500,5,MainActivity.this);
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-
-
+    public boolean ValidDetails(int email, int pass){
+        if (email!= 0 && pass!= 0 )
+            return true;
+        else
+            return false;
     }
-    public void NextStip(View v){
-        //launch a new activity
-        Intent i= new Intent(this, UploadPhoto.class);
-        startActivity(i);
-    }
-
-    public void handleText(View v){
-        TextView t= findViewById(R.id.putName);
-        String input=t.getText().toString();
-
-        Log.d("info",input);
-    }
-
-    @Override
-    public void onLocationChanged(@NonNull Location  location){
-        Toast.makeText(this, ""+location.getLongitude()+","+location.getLongitude(), Toast.LENGTH_SHORT).show();
-        try {
-            Geocoder geocoder=new Geocoder(MainActivity.this, Locale.getDefault());
-            List<Address> addresses = geocoder.getFromLocation(location.getLatitude(),location.getLongitude(),1);
-            String address = addresses.get(0).getAddressLine(0);
-
-            textView_location.setText(address);
-
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-
+    public void logInFunction(final String userName , String password ) {
+        mAuth.signInWithEmailAndPassword(userName , password)
+                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (task.isSuccessful()) {
+                           Intent i = new Intent(MainActivity.this, AddOrder.class);
+                           i.putExtra("userName", userName );
+                            startActivity(i);
+                            finish();
+                        } else
+                        {
+                            Toast.makeText(MainActivity.this, "not existing ", Toast.LENGTH_LONG).show();
+                        }
+                    }
+                });
     }
 }
-
